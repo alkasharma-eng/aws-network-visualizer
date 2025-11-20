@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: network-visualizer
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - DYNAMODB_TABLE_NAME=${DYNAMODB_TABLE_NAME:-network-visualizer-topology}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - ENABLE_XRAY=${ENABLE_XRAY:-false}
+      - ENABLE_METRICS=${ENABLE_METRICS:-true}
+      - ENABLE_AI_ANALYSIS=${ENABLE_AI_ANALYSIS:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src:/app/src
+      - ./output:/app/output
+      - ~/.aws:/home/appuser/.aws:ro
+    networks:
+      - visualizer-network
+    command: python -m src.cli discover --output /app/output/topology.json
+
+  # Redis cache (for local development)
+  redis:
+    image: redis:7-alpine
+    container_name: network-visualizer-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - visualizer-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # LocalStack (for local AWS simulation)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: network-visualizer-localstack
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - SERVICES=s3,dynamodb,lambda,cloudwatch,secretsmanager
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - LAMBDA_EXECUTOR=docker
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack-data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - visualizer-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Development tools container
+  devtools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: network-visualizer-devtools
+    environment:
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./lambda_functions:/app/lambda_functions
+      - ~/.aws:/home/appuser/.aws:ro
+    networks:
+      - visualizer-network
+    command: sleep infinity
+    profiles:
+      - dev
+
+  # Test runner
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: network-visualizer-test
+    environment:
+      - AWS_DEFAULT_REGION=us-east-1
+      - MOTO_HOST=http://localstack:4566
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./coverage:/app/coverage
+    networks:
+      - visualizer-network
+    depends_on:
+      localstack:
+        condition: service_healthy
+    command: pytest tests/ --cov=src --cov-report=html:/app/coverage --cov-report=term
+    profiles:
+      - test
+
+  # Frontend development server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: network-visualizer-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3000}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    networks:
+      - visualizer-network
+    command: npm run dev -- --host
+    profiles:
+      - dev
+
+networks:
+  visualizer-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  localstack-data:

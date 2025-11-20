@@ -1,0 +1,103 @@
+# Artillery load testing configuration
+# Usage: artillery run tests/load/artillery.yml
+
+config:
+  target: "{{ $processEnvironment.API_ENDPOINT }}"
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 50
+      name: "Ramp-up to 50 RPS"
+
+    # Sustained load
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load at 50 RPS"
+
+    # Peak load
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 100
+      name: "Peak load at 100 RPS"
+
+    # Stress test
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 200
+      name: "Stress test at 200 RPS"
+
+  defaults:
+    headers:
+      x-api-key: "{{ $processEnvironment.API_KEY }}"
+      Content-Type: "application/json"
+
+  processor: "./artillery-processor.js"
+
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 1  # Max 1% error rate
+    p95: 1000        # 95th percentile < 1000ms
+    p99: 2000        # 99th percentile < 2000ms
+
+scenarios:
+  # Read-heavy scenario (typical usage)
+  - name: "Read-Heavy Workload"
+    weight: 70
+    flow:
+      - get:
+          url: "/topology/summary"
+          capture:
+            - json: "$.total_resources"
+              as: "resourceCount"
+      - think: 2
+
+      - get:
+          url: "/topology/{{ region }}/{{ vpcId }}"
+          beforeRequest: "setRandomRegionAndVpc"
+      - think: 3
+
+      - get:
+          url: "/analyses/latest"
+      - think: 5
+
+  # Write scenario (admin operations)
+  - name: "Write Workload"
+    weight: 20
+    flow:
+      - post:
+          url: "/discovery/trigger"
+          json:
+            regions: ["us-east-1", "us-west-2"]
+      - think: 10
+
+      - post:
+          url: "/analysis/trigger"
+          json:
+            region: "{{ region }}"
+            vpc_id: "{{ vpcId }}"
+          beforeRequest: "setRandomRegionAndVpc"
+
+  # Mixed scenario
+  - name: "Mixed Workload"
+    weight: 10
+    flow:
+      - loop:
+        - get:
+            url: "/topology/summary"
+        - think: 1
+        - get:
+            url: "/analyses/latest"
+        - think: 2
+        - post:
+            url: "/discovery/trigger"
+            json:
+              regions: ["{{ region }}"]
+            beforeRequest: "setRandomRegion"
+        - think: 5
+        count: 3

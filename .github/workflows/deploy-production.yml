@@ -1,0 +1,345 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: production
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy Infrastructure (Production)
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.terraform-output.outputs.api_endpoint }}
+    defaults:
+      run:
+        working-directory: ./infrastructure
+    outputs:
+      api_endpoint: ${{ steps.terraform-output.outputs.api_endpoint }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_DEPLOYMENT_ROLE_ARN }}
+          role-duration-seconds: 3600
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET_PROD }}" \
+            -backend-config="key=production/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}"
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var="environment=production" \
+            -var="s3_bucket_name=${{ secrets.PROD_S3_BUCKET }}" \
+            -var="enable_ai_analysis=true" \
+            -var="api_throttling_burst_limit=10000" \
+            -var="api_throttling_rate_limit=20000" \
+            -out=tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: infrastructure/tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get Terraform Outputs
+        id: terraform-output
+        run: |
+          echo "api_endpoint=$(terraform output -raw api_endpoint)" >> $GITHUB_OUTPUT
+
+      - name: Notify Deployment Start
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🚀 Production deployment started",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Started*\n*Environment:* production\n*Triggered by:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  package-lambda:
+    name: Package Lambda Functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Create Lambda layer with dependencies
+        run: |
+          mkdir -p lambda_layer/python
+          pip install -r requirements.txt -t lambda_layer/python/
+          cd lambda_layer
+          zip -r ../lambda-layer.zip python/
+
+      - name: Package Discovery Lambda
+        run: |
+          cd lambda_functions/discovery
+          pip install -r requirements.txt -t package/
+          cd package
+          zip -r ../discovery.zip .
+          cd ..
+          zip -g discovery.zip handler.py
+
+      - name: Package Analysis Lambda
+        run: |
+          cd lambda_functions/analysis
+          pip install -r requirements.txt -t package/
+          cd package
+          zip -r ../analysis.zip .
+          cd ..
+          zip -g analysis.zip handler.py
+
+      - name: Package API Lambda
+        run: |
+          cd lambda_functions/api
+          pip install -r requirements.txt -t package/
+          cd package
+          zip -r ../api.zip .
+          cd ..
+          zip -g api.zip handler.py
+
+      - name: Upload Lambda artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-packages
+          path: |
+            lambda_functions/discovery/discovery.zip
+            lambda_functions/analysis/analysis.zip
+            lambda_functions/api/api.zip
+            lambda-layer.zip
+
+  deploy-lambda:
+    name: Deploy Lambda Functions
+    needs: [deploy-infrastructure, package-lambda]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download Lambda artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-packages
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_DEPLOYMENT_ROLE_ARN }}
+
+      - name: Deploy Lambda Layer
+        run: |
+          LAYER_VERSION=$(aws lambda publish-layer-version \
+            --layer-name network-visualizer-dependencies \
+            --zip-file fileb://lambda-layer.zip \
+            --compatible-runtimes python3.11 \
+            --query 'Version' --output text)
+          echo "LAYER_VERSION=$LAYER_VERSION" >> $GITHUB_ENV
+
+      - name: Deploy Discovery Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name network-visualizer-discovery-production \
+            --zip-file fileb://lambda_functions/discovery/discovery.zip
+
+          aws lambda wait function-updated \
+            --function-name network-visualizer-discovery-production
+
+      - name: Deploy Analysis Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name network-visualizer-analysis-production \
+            --zip-file fileb://lambda_functions/analysis/analysis.zip
+
+          aws lambda wait function-updated \
+            --function-name network-visualizer-analysis-production
+
+      - name: Deploy API Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name network-visualizer-api-production \
+            --zip-file fileb://lambda_functions/api/api.zip
+
+          aws lambda wait function-updated \
+            --function-name network-visualizer-api-production
+
+      - name: Create Lambda alias
+        run: |
+          aws lambda update-alias \
+            --function-name network-visualizer-api-production \
+            --name live \
+            --function-version \$LATEST \
+            || aws lambda create-alias \
+            --function-name network-visualizer-api-production \
+            --name live \
+            --function-version \$LATEST
+
+  deploy-frontend:
+    name: Deploy Frontend
+    needs: deploy-infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ needs.deploy-infrastructure.outputs.api_endpoint }}
+          NODE_ENV: production
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_DEPLOYMENT_ROLE_ARN }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.PROD_FRONTEND_BUCKET }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html"
+
+          # Upload index.html separately with no-cache
+          aws s3 cp dist/index.html s3://${{ secrets.PROD_FRONTEND_BUCKET }}/ \
+            --cache-control "no-cache, no-store, must-revalidate"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.PROD_CLOUDFRONT_DIST_ID }} \
+            --paths "/*" \
+            --query 'Invalidation.Id' --output text)
+          echo "CloudFront invalidation created: $INVALIDATION_ID"
+
+  smoke-tests:
+    name: Run Smoke Tests
+    needs: [deploy-lambda, deploy-frontend]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install requests pytest
+
+      - name: Run smoke tests
+        run: |
+          pytest tests/smoke/ -v \
+            --api-endpoint=${{ needs.deploy-infrastructure.outputs.api_endpoint }}
+
+      - name: Health check
+        run: |
+          curl -f ${{ needs.deploy-infrastructure.outputs.api_endpoint }}/health || exit 1
+
+  notify:
+    name: Notify Deployment Status
+    needs: [deploy-infrastructure, deploy-lambda, deploy-frontend, smoke-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify Success
+        if: ${{ needs.smoke-tests.result == 'success' }}
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ Production deployment successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Successful* ✅\n*Environment:* production\n*API Endpoint:* ${{ needs.deploy-infrastructure.outputs.api_endpoint }}\n*Deployed by:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Notify Failure
+        if: ${{ needs.smoke-tests.result != 'success' }}
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ Production deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Production Deployment Failed* ❌\n*Environment:* production\n*Triggered by:* ${{ github.actor }}\n*Action:* Review logs and rollback if necessary"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

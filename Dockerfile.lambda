@@ -1,0 +1,18 @@
+# Dockerfile for AWS Lambda functions
+# Based on AWS Lambda Python 3.11 base image
+
+FROM public.ecr.aws/lambda/python:3.11
+
+# Copy requirements and install dependencies
+COPY requirements.txt ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
+
+# Copy application code
+COPY src/ ${LAMBDA_TASK_ROOT}/src/
+COPY lambda_functions/ ${LAMBDA_TASK_ROOT}/lambda_functions/
+
+# Set Python path
+ENV PYTHONPATH=${LAMBDA_TASK_ROOT}
+
+# Set the CMD to your handler
+CMD [ "lambda_functions.api.handler.handler" ]

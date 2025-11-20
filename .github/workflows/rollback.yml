@@ -1,0 +1,157 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      lambda_version:
+        description: 'Lambda function version to rollback to (leave empty for previous)'
+        required: false
+        type: string
+      terraform_commit:
+        description: 'Git commit SHA for infrastructure rollback (leave empty to skip)'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  rollback-lambda:
+    name: Rollback Lambda Functions
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get previous Lambda versions
+        if: ${{ inputs.lambda_version == '' }}
+        id: get-versions
+        run: |
+          DISCOVERY_VERSION=$(aws lambda list-versions-by-function \
+            --function-name network-visualizer-discovery-${{ inputs.environment }} \
+            --query 'Versions[-2].Version' --output text)
+
+          ANALYSIS_VERSION=$(aws lambda list-versions-by-function \
+            --function-name network-visualizer-analysis-${{ inputs.environment }} \
+            --query 'Versions[-2].Version' --output text)
+
+          API_VERSION=$(aws lambda list-versions-by-function \
+            --function-name network-visualizer-api-${{ inputs.environment }} \
+            --query 'Versions[-2].Version' --output text)
+
+          echo "discovery_version=$DISCOVERY_VERSION" >> $GITHUB_OUTPUT
+          echo "analysis_version=$ANALYSIS_VERSION" >> $GITHUB_OUTPUT
+          echo "api_version=$API_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Rollback Discovery Lambda
+        run: |
+          VERSION=${{ inputs.lambda_version || steps.get-versions.outputs.discovery_version }}
+          aws lambda update-alias \
+            --function-name network-visualizer-discovery-${{ inputs.environment }} \
+            --name live \
+            --function-version $VERSION
+          echo "Rolled back Discovery Lambda to version $VERSION"
+
+      - name: Rollback Analysis Lambda
+        run: |
+          VERSION=${{ inputs.lambda_version || steps.get-versions.outputs.analysis_version }}
+          aws lambda update-alias \
+            --function-name network-visualizer-analysis-${{ inputs.environment }} \
+            --name live \
+            --function-version $VERSION
+          echo "Rolled back Analysis Lambda to version $VERSION"
+
+      - name: Rollback API Lambda
+        run: |
+          VERSION=${{ inputs.lambda_version || steps.get-versions.outputs.api_version }}
+          aws lambda update-alias \
+            --function-name network-visualizer-api-${{ inputs.environment }} \
+            --name live \
+            --function-version $VERSION
+          echo "Rolled back API Lambda to version $VERSION"
+
+      - name: Verify rollback
+        run: |
+          aws lambda get-function \
+            --function-name network-visualizer-api-${{ inputs.environment }} \
+            --qualifier live
+
+  rollback-infrastructure:
+    name: Rollback Infrastructure
+    if: ${{ inputs.terraform_commit != '' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: ./infrastructure
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.terraform_commit }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="environment=${{ inputs.environment }}" \
+            -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
+
+  notify:
+    name: Notify Rollback
+    needs: [rollback-lambda]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify rollback completion
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🔄 Rollback completed for ${{ inputs.environment }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Rollback Completed* 🔄\n*Environment:* ${{ inputs.environment }}\n*Status:* ${{ needs.rollback-lambda.result }}\n*Triggered by:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

@@ -1,0 +1,81 @@
+# AWS Network Visualizer - Production Dependencies
+
+# Core AWS SDK
+boto3>=1.34.0,<2.0.0
+botocore>=1.34.0,<2.0.0
+
+# Configuration Management
+pydantic>=2.5.0,<3.0.0
+pydantic-settings>=2.1.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Observability - Logging
+python-json-logger>=2.0.7,<3.0.0
+watchtower>=3.0.1,<4.0.0  # CloudWatch Logs integration
+
+# Observability - Tracing
+aws-xray-sdk>=2.12.0,<3.0.0
+
+# Retry Logic
+tenacity>=8.2.3,<9.0.0
+
+# Graph Analysis
+networkx>=3.2.1,<4.0.0
+
+# Visualization
+matplotlib>=3.8.2,<4.0.0
+plotly>=5.18.0,<6.0.0  # For interactive visualizations
+pillow>=10.1.0,<11.0.0  # Image processing
+
+# AI Analysis - Bedrock
+# Note: Bedrock client is part of boto3
+
+# Async Support
+aioboto3>=12.3.0,<13.0.0  # Async boto3
+aiohttp>=3.9.1,<4.0.0
+
+# API Framework (for Lambda/API layer)
+fastapi>=0.109.0,<1.0.0
+mangum>=0.17.0,<1.0.0  # AWS Lambda adapter for FastAPI
+pydantic[email]>=2.5.0,<3.0.0
+
+# Storage - DynamoDB, S3, Cache
+redis>=5.0.1,<6.0.0  # ElastiCache Redis client
+
+# Data Serialization
+orjson>=3.9.10,<4.0.0  # Fast JSON serialization
+
+# CLI
+click>=8.1.7,<9.0.0
+rich>=13.7.0,<14.0.0  # Rich terminal output
+tqdm>=4.66.1,<5.0.0  # Progress bars
+
+# Testing
+pytest>=7.4.3,<8.0.0
+pytest-asyncio>=0.23.2,<1.0.0
+pytest-cov>=4.1.0,<5.0.0
+pytest-mock>=3.12.0,<4.0.0
+moto>=4.2.11,<5.0.0  # AWS service mocking
+
+# Code Quality
+black>=23.12.1,<24.0.0
+flake8>=7.0.0,<8.0.0
+mypy>=1.8.0,<2.0.0
+pylint>=3.0.3,<4.0.0
+isort>=5.13.2,<6.0.0
+
+# Type Stubs
+boto3-stubs[essential]>=1.34.0,<2.0.0
+types-requests>=2.31.0,<3.0.0
+
+# Documentation
+mkdocs>=1.5.3,<2.0.0
+mkdocs-material>=9.5.3,<10.0.0
+mkdocstrings[python]>=0.24.0,<1.0.0
+
+# Security
+bandit>=1.7.6,<2.0.0  # Security linter
+
+# Development
+ipython>=8.19.0,<9.0.0
+ipdb>=0.13.13,<1.0.0

@@ -1,0 +1,44 @@
+[
+  {
+    "AlarmName": "NetworkVisualizer-HighErrorRate",
+    "AlarmDescription": "Alert when error rate exceeds threshold",
+    "MetricName": "ErrorCount",
+    "Namespace": "AWS/NetworkVisualizer",
+    "Statistic": "Sum",
+    "Period": 300,
+    "EvaluationPeriods": 2,
+    "Threshold": 10,
+    "ComparisonOperator": "GreaterThanThreshold",
+    "TreatMissingData": "notBreaching"
+  },
+  {
+    "AlarmName": "NetworkVisualizer-LongDiscoveryDuration",
+    "AlarmDescription": "Alert when discovery takes too long",
+    "MetricName": "DiscoveryDuration",
+    "Namespace": "AWS/NetworkVisualizer",
+    "Statistic": "Average",
+    "Period": 300,
+    "EvaluationPeriods": 1,
+    "Threshold": 300000,
+    "ComparisonOperator": "GreaterThanThreshold",
+    "TreatMissingData": "notBreaching"
+  },
+  {
+    "AlarmName": "NetworkVisualizer-CriticalAnomalies",
+    "AlarmDescription": "Alert when critical anomalies are detected",
+    "MetricName": "AnomalyCount",
+    "Namespace": "AWS/NetworkVisualizer",
+    "Dimensions": [
+      {
+        "Name": "Severity",
+        "Value": "critical"
+      }
+    ],
+    "Statistic": "Sum",
+    "Period": 300,
+    "EvaluationPeriods": 1,
+    "Threshold": 1,
+    "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+    "TreatMissingData": "notBreaching"
+  }
+]
