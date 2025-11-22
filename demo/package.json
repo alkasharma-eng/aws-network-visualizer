@@ -1,0 +1,16 @@
+{
+  "name": "aws-network-visualizer-demo",
+  "version": "1.0.0",
+  "description": "Playwright demo scripts for AWS Network Visualizer",
+  "scripts": {
+    "demo:quick": "playwright test demo-quick.spec.ts --headed",
+    "demo:full": "playwright test demo-full.spec.ts --headed",
+    "demo:record": "playwright test --headed --video=on",
+    "demo:mobile": "playwright test demo-mobile.spec.ts --headed",
+    "install": "playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.1",
+    "playwright": "^1.40.1"
+  }
+}
