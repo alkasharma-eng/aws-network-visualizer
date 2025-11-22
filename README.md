@@ -150,16 +150,16 @@ print(f"Found {len(anomalies)} anomalies")
 | EC2 Instance | ✅ | `EC2Collector` |
 | Internet Gateway | ✅ | `InternetGatewayCollector` |
 | Security Group | ✅ | `SecurityGroupCollector` |
-| NAT Gateway | 🚧 | In Progress |
-| Transit Gateway | 🚧 | In Progress |
-| Route Table | 🚧 | In Progress |
-| Network ACL | 🚧 | In Progress |
-| VPC Peering | 🚧 | In Progress |
-| VPN Connection | 🚧 | In Progress |
-| Direct Connect | 🚧 | In Progress |
-| Load Balancer | 🚧 | In Progress |
-| RDS Instance | 🚧 | In Progress |
-| Lambda ENI | 🚧 | In Progress |
+| NAT Gateway | ✅ | `NATGatewayCollector` |
+| Transit Gateway | ✅ | `TransitGatewayCollector` |
+| Route Table | ✅ | `RouteTableCollector` |
+| Network ACL | ✅ | `NetworkACLCollector` |
+| VPC Peering | ✅ | `VPCPeeringCollector` |
+| VPN Connection | ✅ | `VPNConnectionCollector` |
+| Direct Connect | ✅ | `DirectConnectCollector` |
+| Load Balancer (ALB/NLB/CLB) | ✅ | `LoadBalancerCollector` |
+| RDS Instance/Cluster | ✅ | `RDSCollector` |
+| Lambda ENI | ✅ | `LambdaENICollector` |
 
 ---
 
