@@ -19,7 +19,7 @@ resource "aws_backup_plan" "main" {
   rule {
     rule_name         = "daily_backups"
     target_vault_name = aws_backup_vault.main.name
-    schedule          = "cron(0 5 * * ? *)"  # 5 AM UTC daily
+    schedule          = "cron(0 5 * * ? *)" # 5 AM UTC daily
 
     lifecycle {
       delete_after = 30
@@ -35,7 +35,7 @@ resource "aws_backup_plan" "main" {
   rule {
     rule_name         = "weekly_backups"
     target_vault_name = aws_backup_vault.main.name
-    schedule          = "cron(0 6 ? * SUN *)"  # 6 AM UTC on Sundays
+    schedule          = "cron(0 6 ? * SUN *)" # 6 AM UTC on Sundays
 
     lifecycle {
       delete_after = 90
@@ -51,7 +51,7 @@ resource "aws_backup_plan" "main" {
   rule {
     rule_name         = "monthly_backups"
     target_vault_name = aws_backup_vault.main.name
-    schedule          = "cron(0 7 1 * ? *)"  # 7 AM UTC on 1st of month
+    schedule          = "cron(0 7 1 * ? *)" # 7 AM UTC on 1st of month
 
     lifecycle {
       delete_after = 365

@@ -14,6 +14,16 @@ from src.collectors.subnet_collector import SubnetCollector
 from src.collectors.ec2_collector import EC2Collector
 from src.collectors.igw_collector import InternetGatewayCollector
 from src.collectors.security_group_collector import SecurityGroupCollector
+from src.collectors.nat_gateway_collector import NATGatewayCollector
+from src.collectors.route_table_collector import RouteTableCollector
+from src.collectors.network_acl_collector import NetworkACLCollector
+from src.collectors.transit_gateway_collector import TransitGatewayCollector
+from src.collectors.vpc_peering_collector import VPCPeeringCollector
+from src.collectors.vpn_connection_collector import VPNConnectionCollector
+from src.collectors.direct_connect_collector import DirectConnectCollector
+from src.collectors.load_balancer_collector import LoadBalancerCollector
+from src.collectors.rds_collector import RDSCollector
+from src.collectors.lambda_eni_collector import LambdaENICollector
 from src.core.config import get_settings
 from src.core.constants import ResourceType
 from src.core.logging import get_logger
@@ -35,7 +45,16 @@ class CollectorManager:
         ResourceType.EC2_INSTANCE: EC2Collector,
         ResourceType.INTERNET_GATEWAY: InternetGatewayCollector,
         ResourceType.SECURITY_GROUP: SecurityGroupCollector,
-        # Add more collectors as they're implemented
+        ResourceType.NAT_GATEWAY: NATGatewayCollector,
+        ResourceType.ROUTE_TABLE: RouteTableCollector,
+        ResourceType.NETWORK_ACL: NetworkACLCollector,
+        ResourceType.TRANSIT_GATEWAY: TransitGatewayCollector,
+        ResourceType.VPC_PEERING: VPCPeeringCollector,
+        ResourceType.VPN_CONNECTION: VPNConnectionCollector,
+        ResourceType.DIRECT_CONNECT: DirectConnectCollector,
+        ResourceType.LOAD_BALANCER: LoadBalancerCollector,
+        ResourceType.RDS_INSTANCE: RDSCollector,
+        ResourceType.LAMBDA_ENI: LambdaENICollector,
     }
 
     def __init__(
@@ -87,7 +106,26 @@ class CollectorManager:
             enabled.append(ResourceType.INTERNET_GATEWAY)
         if self.settings.collect_security_groups:
             enabled.append(ResourceType.SECURITY_GROUP)
-        # Add more resource types as collectors are implemented
+        if self.settings.collect_nat_gateways:
+            enabled.append(ResourceType.NAT_GATEWAY)
+        if self.settings.collect_route_tables:
+            enabled.append(ResourceType.ROUTE_TABLE)
+        if self.settings.collect_network_acls:
+            enabled.append(ResourceType.NETWORK_ACL)
+        if self.settings.collect_transit_gateways:
+            enabled.append(ResourceType.TRANSIT_GATEWAY)
+        if self.settings.collect_vpc_peering:
+            enabled.append(ResourceType.VPC_PEERING)
+        if self.settings.collect_vpn_connections:
+            enabled.append(ResourceType.VPN_CONNECTION)
+        if self.settings.collect_direct_connect:
+            enabled.append(ResourceType.DIRECT_CONNECT)
+        if self.settings.collect_load_balancers:
+            enabled.append(ResourceType.LOAD_BALANCER)
+        if self.settings.collect_rds_instances:
+            enabled.append(ResourceType.RDS_INSTANCE)
+        if self.settings.collect_lambda_enis:
+            enabled.append(ResourceType.LAMBDA_ENI)
 
         return enabled
 

@@ -1,0 +1,245 @@
+# AWS Network Visualizer - Terraform Variables
+# Copy this file to terraform.tfvars and customize for your environment
+
+# ============================================================================
+# BASIC CONFIGURATION (Required)
+# ============================================================================
+
+# AWS Region for primary resources
+aws_region = "us-east-1"
+
+# Environment name (development, staging, production)
+environment = "production"
+
+# ============================================================================
+# RESOURCE NAMING (Required - Must be globally unique)
+# ============================================================================
+
+# DynamoDB table name
+dynamodb_table_name = "network-visualizer-topology"
+
+# S3 bucket for topology data (must be globally unique)
+# Suggestion: add your company name or random suffix
+s3_bucket_name = "network-visualizer-data-yourcompany-12345"
+
+# S3 bucket for frontend hosting (must be globally unique)
+frontend_bucket_name = "network-visualizer-frontend-yourcompany-12345"
+
+# ============================================================================
+# AWS REGIONS TO SCAN
+# ============================================================================
+
+# List of AWS regions to discover resources from
+# Add all regions where you have infrastructure
+aws_regions = [
+  "us-east-1",
+  "us-east-2",
+  "us-west-1",
+  "us-west-2",
+  "eu-west-1",
+  "eu-central-1",
+  "ap-southeast-1",
+  "ap-northeast-1",
+]
+
+# ============================================================================
+# AI ANALYSIS (Optional but Recommended)
+# ============================================================================
+
+# Enable AI-powered anomaly detection with Amazon Bedrock
+enable_ai_analysis = true
+
+# Bedrock model ID
+bedrock_model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+# ============================================================================
+# DISCOVERY SCHEDULE
+# ============================================================================
+
+# How often to automatically discover resources
+# Options:
+#   - "rate(1 hour)" - Every hour
+#   - "rate(30 minutes)" - Every 30 minutes
+#   - "rate(1 day)" - Once per day
+#   - "cron(0 2 * * ? *)" - Daily at 2 AM UTC
+discovery_schedule = "rate(1 hour)"
+
+# ============================================================================
+# CUSTOM DOMAIN (Optional - Leave disabled for quick start)
+# ============================================================================
+
+# Set to true to use a custom domain (requires SSL certificate)
+create_dns_records = false
+
+# Your Route53 hosted zone name (only if create_dns_records = true)
+# hosted_zone_name = "yourcompany.com"
+
+# Custom domain for the frontend (only if create_dns_records = true)
+# frontend_domain_name = "network-visualizer.yourcompany.com"
+
+# List of domain names for CloudFront (only if create_dns_records = true)
+# frontend_domain_names = ["network-visualizer.yourcompany.com"]
+
+# ACM certificate ARN (only if create_dns_records = true)
+# IMPORTANT: Certificate MUST be in us-east-1 for CloudFront
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abc-123-xyz"
+
+# Enable Route53 health checks (only if create_dns_records = true)
+# enable_route53_health_check = true
+
+# ============================================================================
+# API GATEWAY CONFIGURATION
+# ============================================================================
+
+# API throttling limits
+api_throttling_rate_limit = 10000  # Requests per second
+api_throttling_burst_limit = 5000  # Burst capacity
+
+# API caching
+api_enable_caching = true
+api_cache_size = "0.5"  # GB (0.5, 1.6, 6.1, 13.5, 28.4, 58.2, 118, 237)
+
+# API quota limits per key
+api_quota_limit = 100000  # Requests per day per API key
+
+# Require API key for access (set to false for open access during testing)
+api_require_api_key = true
+
+# ============================================================================
+# CLOUDFRONT CONFIGURATION
+# ============================================================================
+
+# CloudFront price class
+# Options: PriceClass_100 (US/EU), PriceClass_200 (+ Asia), PriceClass_All
+cloudfront_price_class = "PriceClass_All"
+
+# Geographic restrictions (optional)
+cloudfront_geo_restriction_type = "none"  # or "whitelist", "blacklist"
+# cloudfront_geo_restriction_locations = ["US", "CA", "GB", "DE"]
+
+# ============================================================================
+# FRONTEND CONFIGURATION
+# ============================================================================
+
+# CORS allowed origins for API calls from frontend
+frontend_cors_origins = [
+  "*",  # Allow all origins (change in production!)
+  # "https://network-visualizer.yourcompany.com",
+  # "http://localhost:3000",  # For local development
+]
+
+# ============================================================================
+# OBSERVABILITY
+# ============================================================================
+
+# Enable AWS X-Ray tracing
+enable_xray = true
+
+# CloudWatch log retention (days)
+cloudwatch_log_retention_days = 30
+
+# CloudWatch dashboard name
+cloudwatch_dashboard_name = "network-visualizer-prod"
+
+# ============================================================================
+# LAMBDA CONFIGURATION
+# ============================================================================
+
+# Lambda runtime
+lambda_runtime = "python3.11"
+
+# Lambda timeout (seconds)
+lambda_timeout = 900  # 15 minutes
+
+# Lambda memory size (MB)
+lambda_memory_size = 3008  # 3 GB
+
+# Lambda reserved concurrency (max concurrent executions)
+# Set to 0 for unlimited, or a specific number to limit
+lambda_reserved_concurrency = 0
+
+# Lambda environment variables
+lambda_environment_variables = {
+  AWS_NET_VIZ_LOG_LEVEL           = "INFO"
+  AWS_NET_VIZ_ENABLE_XRAY         = "true"
+  AWS_NET_VIZ_ENABLE_METRICS      = "true"
+  AWS_NET_VIZ_MAX_CONCURRENT_COLLECTORS = "20"
+}
+
+# ============================================================================
+# STORAGE CONFIGURATION
+# ============================================================================
+
+# DynamoDB billing mode (PROVISIONED or PAY_PER_REQUEST)
+dynamodb_billing_mode = "PAY_PER_REQUEST"
+
+# DynamoDB point-in-time recovery
+dynamodb_point_in_time_recovery = true
+
+# S3 lifecycle policies
+s3_enable_lifecycle = true
+s3_archive_after_days = 90   # Move to Glacier after 90 days
+s3_delete_after_days = 365   # Delete after 1 year
+
+# ElastiCache configuration (optional)
+enable_elasticache = false
+# elasticache_node_type = "cache.t3.micro"
+# elasticache_num_cache_nodes = 1
+
+# ============================================================================
+# SECURITY CONFIGURATION
+# ============================================================================
+
+# Enable AWS WAF for API Gateway
+enable_waf = true
+
+# WAF rate limit (requests per 5 minutes from single IP)
+waf_rate_limit = 2000
+
+# Enable GuardDuty findings integration
+enable_guardduty = false
+
+# Use AWS Secrets Manager for sensitive configuration
+secrets_manager_enabled = false
+
+# ============================================================================
+# BACKUP CONFIGURATION
+# ============================================================================
+
+# Enable AWS Backup for DynamoDB
+enable_backup = true
+
+# Backup retention (days)
+backup_retention_days = 30
+
+# Backup schedule (cron)
+backup_schedule = "cron(0 5 * * ? *)"  # Daily at 5 AM UTC
+
+# ============================================================================
+# COST OPTIMIZATION
+# ============================================================================
+
+# Enable cost optimization features
+enable_cost_optimization = true
+
+# DynamoDB auto-scaling (only if billing_mode = PROVISIONED)
+# dynamodb_enable_autoscaling = true
+# dynamodb_min_read_capacity = 5
+# dynamodb_max_read_capacity = 100
+# dynamodb_min_write_capacity = 5
+# dynamodb_max_write_capacity = 100
+
+# S3 Intelligent-Tiering
+s3_enable_intelligent_tiering = true
+
+# ============================================================================
+# TAGS (Applied to all resources)
+# ============================================================================
+
+common_tags = {
+  Project     = "aws-network-visualizer"
+  Team        = "Infrastructure"
+  CostCenter  = "IT"
+  Compliance  = "SOC2"
+  DataClass   = "Internal"
+}

@@ -1,11 +1,11 @@
 # DynamoDB Table for Network Topology Storage
 
 resource "aws_dynamodb_table" "topology" {
-  name           = var.table_name
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "PK"
-  range_key      = "SK"
-  stream_enabled = true
+  name             = var.table_name
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "PK"
+  range_key        = "SK"
+  stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {

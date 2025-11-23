@@ -218,27 +218,4 @@ data "archive_file" "api_lambda" {
   output_path = "${path.module}/api.zip"
 }
 
-# Outputs
-output "discovery_function_name" {
-  value = aws_lambda_function.discovery.function_name
-}
-
-output "discovery_function_arn" {
-  value = aws_lambda_function.discovery.arn
-}
-
-output "analysis_function_name" {
-  value = aws_lambda_function.analysis.function_name
-}
-
-output "analysis_function_arn" {
-  value = aws_lambda_function.analysis.arn
-}
-
-output "api_function_name" {
-  value = aws_lambda_function.api.function_name
-}
-
-output "api_function_arn" {
-  value = aws_lambda_function.api.arn
-}
+# Outputs moved to outputs.tf

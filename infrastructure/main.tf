@@ -55,13 +55,13 @@ module "s3" {
 module "lambda" {
   source = "./modules/lambda"
 
-  environment          = var.environment
-  dynamodb_table_name  = module.dynamodb.table_name
-  dynamodb_table_arn   = module.dynamodb.table_arn
-  s3_bucket_name       = module.s3.bucket_name
-  s3_bucket_arn        = module.s3.bucket_arn
-  aws_regions          = var.aws_regions
-  enable_ai_analysis   = var.enable_ai_analysis
+  environment         = var.environment
+  dynamodb_table_name = module.dynamodb.table_name
+  dynamodb_table_arn  = module.dynamodb.table_arn
+  s3_bucket_name      = module.s3.bucket_name
+  s3_bucket_arn       = module.s3.bucket_arn
+  aws_regions         = var.aws_regions
+  enable_ai_analysis  = var.enable_ai_analysis
 }
 
 module "api_gateway" {
@@ -84,9 +84,9 @@ module "api_gateway" {
 module "cloudwatch" {
   source = "./modules/cloudwatch"
 
-  environment         = var.environment
-  discovery_function  = module.lambda.discovery_function_name
-  analysis_function   = module.lambda.analysis_function_name
+  environment        = var.environment
+  discovery_function = module.lambda.discovery_function_name
+  analysis_function  = module.lambda.analysis_function_name
 }
 
 module "eventbridge" {
@@ -99,39 +99,39 @@ module "eventbridge" {
 module "frontend_s3" {
   source = "./modules/frontend_s3"
 
-  environment         = var.environment
-  bucket_name         = var.frontend_bucket_name
+  environment          = var.environment
+  bucket_name          = var.frontend_bucket_name
   cors_allowed_origins = var.frontend_cors_origins
-  log_retention_days  = var.cloudwatch_log_retention_days
+  log_retention_days   = var.cloudwatch_log_retention_days
 }
 
 module "cloudfront" {
   source = "./modules/cloudfront"
 
-  environment                     = var.environment
-  s3_bucket_name                  = module.frontend_s3.bucket_name
-  s3_bucket_id                    = module.frontend_s3.bucket_id
-  s3_bucket_arn                   = module.frontend_s3.bucket_arn
-  s3_bucket_regional_domain_name  = module.frontend_s3.bucket_regional_domain_name
-  api_gateway_domain_name         = replace(module.api_gateway.api_endpoint, "https://", "")
-  domain_names                    = var.frontend_domain_names
-  acm_certificate_arn             = var.acm_certificate_arn
-  price_class                     = var.cloudfront_price_class
-  geo_restriction_type            = var.cloudfront_geo_restriction_type
-  geo_restriction_locations       = var.cloudfront_geo_restriction_locations
-  logging_bucket                  = module.frontend_s3.logging_bucket
+  environment                    = var.environment
+  s3_bucket_name                 = module.frontend_s3.bucket_name
+  s3_bucket_id                   = module.frontend_s3.bucket_id
+  s3_bucket_arn                  = module.frontend_s3.bucket_arn
+  s3_bucket_regional_domain_name = module.frontend_s3.bucket_regional_domain_name
+  api_gateway_domain_name        = replace(module.api_gateway.api_endpoint, "https://", "")
+  domain_names                   = var.frontend_domain_names
+  acm_certificate_arn            = var.acm_certificate_arn
+  price_class                    = var.cloudfront_price_class
+  geo_restriction_type           = var.cloudfront_geo_restriction_type
+  geo_restriction_locations      = var.cloudfront_geo_restriction_locations
+  logging_bucket                 = module.frontend_s3.logging_bucket
 }
 
 module "route53" {
   source = "./modules/route53"
 
-  environment                = var.environment
-  create_dns_records         = var.create_dns_records
-  hosted_zone_name           = var.hosted_zone_name
-  domain_name                = var.frontend_domain_name
-  cloudfront_domain_name     = module.cloudfront.distribution_domain_name
-  cloudfront_hosted_zone_id  = module.cloudfront.distribution_hosted_zone_id
-  enable_health_check        = var.enable_route53_health_check
+  environment               = var.environment
+  create_dns_records        = var.create_dns_records
+  hosted_zone_name          = var.hosted_zone_name
+  domain_name               = var.frontend_domain_name
+  cloudfront_domain_name    = module.cloudfront.distribution_domain_name
+  cloudfront_hosted_zone_id = module.cloudfront.distribution_hosted_zone_id
+  enable_health_check       = var.enable_route53_health_check
 }
 
 # Outputs

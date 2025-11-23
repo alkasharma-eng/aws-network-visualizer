@@ -99,7 +99,7 @@ resource "aws_ce_anomaly_monitor" "service_monitor" {
 
   monitor_specification = jsonencode({
     Tags = {
-      Key   = "Environment"
+      Key    = "Environment"
       Values = [var.environment]
     }
   })
@@ -138,9 +138,9 @@ resource "aws_lambda_function" "cost_optimizer" {
 
   environment {
     variables = {
-      ENVIRONMENT        = var.environment
-      SNS_TOPIC_ARN     = aws_sns_topic.cost_alerts.arn
-      DYNAMODB_TABLE    = var.dynamodb_table_name
+      ENVIRONMENT    = var.environment
+      SNS_TOPIC_ARN  = aws_sns_topic.cost_alerts.arn
+      DYNAMODB_TABLE = var.dynamodb_table_name
     }
   }
 
@@ -312,10 +312,10 @@ def send_recommendations(recommendations):
     for rec in recommendations:
         message += f"- {rec['type']}: {rec['resource']}\n"
         message += f"  Current: {rec['current']}, Recommended: {rec['recommended']}\n"
-        message += f"  Potential savings: ${rec['savings']:.2f}/month\n\n"
+        message += f"  Potential savings: $${rec['savings']:.2f}/month\n\n"
         total_savings += rec['savings']
 
-    message += f"Total potential savings: ${total_savings:.2f}/month"
+    message += f"Total potential savings: $${total_savings:.2f}/month"
 
     sns.publish(
         TopicArn=context.environment['SNS_TOPIC_ARN'],
@@ -349,7 +349,7 @@ resource "aws_sns_topic_subscription" "cost_alerts_email" {
 resource "aws_cloudwatch_event_rule" "cost_optimizer_schedule" {
   name                = "cost-optimizer-schedule-${var.environment}"
   description         = "Run cost optimizer weekly"
-  schedule_expression = "cron(0 9 ? * MON *)"  # Every Monday at 9 AM UTC
+  schedule_expression = "cron(0 9 ? * MON *)" # Every Monday at 9 AM UTC
 
   tags = {
     Name        = "cost-optimizer-schedule-${var.environment}"

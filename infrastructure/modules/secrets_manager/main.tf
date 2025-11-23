@@ -58,10 +58,10 @@ resource "aws_secretsmanager_secret" "integrations" {
 resource "aws_secretsmanager_secret_version" "integrations" {
   secret_id = aws_secretsmanager_secret.integrations.id
   secret_string = jsonencode({
-    slack_webhook_url      = var.slack_webhook_url
-    pagerduty_api_key      = var.pagerduty_api_key
-    datadog_api_key        = var.datadog_api_key
-    github_token           = var.github_token
+    slack_webhook_url = var.slack_webhook_url
+    pagerduty_api_key = var.pagerduty_api_key
+    datadog_api_key   = var.datadog_api_key
+    github_token      = var.github_token
   })
 }
 
