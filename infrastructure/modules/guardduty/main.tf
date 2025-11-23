@@ -32,14 +32,14 @@ resource "aws_guardduty_detector" "main" {
 # GuardDuty Filter for high severity findings
 resource "aws_guardduty_filter" "high_severity" {
   name        = "high-severity-findings-${var.environment}"
-  action      = "ARCHIVE"  # or "NOOP" to keep them
+  action      = "ARCHIVE" # or "NOOP" to keep them
   detector_id = aws_guardduty_detector.main.id
   rank        = 1
 
   finding_criteria {
     criterion {
       field  = "severity"
-      equals = ["8", "9", "10"]  # High and Critical
+      equals = ["8", "9", "10"] # High and Critical
     }
   }
 }
@@ -72,7 +72,7 @@ resource "aws_cloudwatch_event_rule" "guardduty_findings" {
     detail-type = ["GuardDuty Finding"]
     detail = {
       severity = [
-        { numeric = [">=", 7] }  # High and Critical only
+        { numeric = [">=", 7] } # High and Critical only
       ]
     }
   })
@@ -119,8 +119,8 @@ resource "aws_lambda_function" "guardduty_responder" {
 
   environment {
     variables = {
-      ENVIRONMENT    = var.environment
-      SNS_TOPIC_ARN  = aws_sns_topic.guardduty_alerts.arn
+      ENVIRONMENT   = var.environment
+      SNS_TOPIC_ARN = aws_sns_topic.guardduty_alerts.arn
     }
   }
 

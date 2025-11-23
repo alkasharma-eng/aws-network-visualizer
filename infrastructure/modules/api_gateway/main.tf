@@ -317,12 +317,12 @@ resource "aws_api_gateway_stage" "staging" {
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
     format = jsonencode({
-      requestId      = "$context.requestId"
-      ip             = "$context.identity.sourceIp"
-      requestTime    = "$context.requestTime"
-      httpMethod     = "$context.httpMethod"
-      resourcePath   = "$context.resourcePath"
-      status         = "$context.status"
+      requestId    = "$context.requestId"
+      ip           = "$context.identity.sourceIp"
+      requestTime  = "$context.requestTime"
+      httpMethod   = "$context.httpMethod"
+      resourcePath = "$context.resourcePath"
+      status       = "$context.status"
     })
   }
 
@@ -352,13 +352,13 @@ resource "aws_api_gateway_method_settings" "all" {
   method_path = "*/*"
 
   settings {
-    metrics_enabled      = true
-    logging_level        = "INFO"
-    data_trace_enabled   = true
+    metrics_enabled        = true
+    logging_level          = "INFO"
+    data_trace_enabled     = true
     throttling_burst_limit = var.throttling_burst_limit
     throttling_rate_limit  = var.throttling_rate_limit
-    caching_enabled      = var.enable_caching
-    cache_ttl_in_seconds = var.cache_ttl_seconds
+    caching_enabled        = var.enable_caching
+    cache_ttl_in_seconds   = var.cache_ttl_seconds
   }
 }
 

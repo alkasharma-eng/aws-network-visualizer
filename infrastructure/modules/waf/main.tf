@@ -2,7 +2,7 @@
 
 resource "aws_wafv2_web_acl" "main" {
   name  = "network-visualizer-waf-${var.environment}"
-  scope = var.scope  # CLOUDFRONT or REGIONAL
+  scope = var.scope # CLOUDFRONT or REGIONAL
 
   default_action {
     allow {}

@@ -50,8 +50,8 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 86400  # 1 day
-    max_ttl                = 31536000  # 1 year
+    default_ttl            = 86400    # 1 day
+    max_ttl                = 31536000 # 1 year
     compress               = true
 
     function_association {
@@ -99,7 +99,7 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 31536000  # 1 year
+    min_ttl                = 31536000 # 1 year
     default_ttl            = 31536000
     max_ttl                = 31536000
     compress               = true
@@ -113,9 +113,9 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = var.acm_certificate_arn != "" ? var.acm_certificate_arn : null
-    ssl_support_method       = var.acm_certificate_arn != "" ? "sni-only" : null
-    minimum_protocol_version = "TLSv1.2_2021"
+    acm_certificate_arn            = var.acm_certificate_arn != "" ? var.acm_certificate_arn : null
+    ssl_support_method             = var.acm_certificate_arn != "" ? "sni-only" : null
+    minimum_protocol_version       = "TLSv1.2_2021"
     cloudfront_default_certificate = var.acm_certificate_arn == "" ? true : false
   }
 
