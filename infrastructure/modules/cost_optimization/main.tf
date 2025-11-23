@@ -312,10 +312,10 @@ def send_recommendations(recommendations):
     for rec in recommendations:
         message += f"- {rec['type']}: {rec['resource']}\n"
         message += f"  Current: {rec['current']}, Recommended: {rec['recommended']}\n"
-        message += f"  Potential savings: ${rec['savings']:.2f}/month\n\n"
+        message += f"  Potential savings: $${rec['savings']:.2f}/month\n\n"
         total_savings += rec['savings']
 
-    message += f"Total potential savings: ${total_savings:.2f}/month"
+    message += f"Total potential savings: $${total_savings:.2f}/month"
 
     sns.publish(
         TopicArn=context.environment['SNS_TOPIC_ARN'],
