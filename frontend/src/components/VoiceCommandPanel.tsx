@@ -125,7 +125,7 @@ const VoiceCommandPanel: React.FC<VoiceCommandPanelProps> = ({ enabled = true })
                     </Typography>
                   </Box>
                   <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
-                    "{transcript}"
+                    &quot;{transcript}&quot;
                   </Typography>
                   {confidence > 0 && (
                     <Chip
@@ -312,7 +312,7 @@ const VoiceCommandPanel: React.FC<VoiceCommandPanelProps> = ({ enabled = true })
             <Divider sx={{ my: 2 }} />
 
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
-              Pro Tip: Say "Help" anytime to show this panel
+              Pro Tip: Say &quot;Help&quot; anytime to show this panel
             </Typography>
           </Paper>
         </Box>

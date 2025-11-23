@@ -24,12 +24,10 @@ import {
 import {
   CloudQueue,
   Security,
-  TrendingUp,
   Refresh,
   GetApp,
   Warning,
   CheckCircle,
-  Error as ErrorIcon,
   Speed,
   Storage,
   NetworkCheck,

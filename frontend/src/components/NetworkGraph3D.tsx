@@ -22,8 +22,6 @@ import {
   Rotate90DegreesCcw as RotateIcon,
   Fullscreen as FullscreenIcon,
   FullscreenExit as FullscreenExitIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 
 interface Node {
@@ -555,7 +553,7 @@ const NetworkGraph3D: React.FC<NetworkGraph3DProps> = ({
         backgroundColor="#000000"
         nodeLabel={nodeLabel}
         nodeColor={nodeColor}
-        nodeRelSize={nodeSize}
+        nodeRelSize={nodeSize as any}
         nodeOpacity={0.9}
         linkColor={linkColor}
         linkWidth={linkWidth}

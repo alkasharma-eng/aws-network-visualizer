@@ -25,7 +25,6 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
-  alpha,
 } from '@mui/material';
 import {
   Warning as WarningIcon,
@@ -109,7 +108,7 @@ const AnomaliesView: React.FC = () => {
     return filtered;
   }, [anomalyReport, severityFilter, searchQuery]);
 
-  const handleAccordionChange = (anomalyId: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+  const handleAccordionChange = (anomalyId: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
     setExpandedAnomaly(isExpanded ? anomalyId : false);
   };
 
@@ -264,7 +263,7 @@ const AnomaliesView: React.FC = () => {
           <ToggleButtonGroup
             value={severityFilter}
             exclusive
-            onChange={(e, value) => value && setSeverityFilter(value)}
+            onChange={(_e, value) => value && setSeverityFilter(value)}
             size="small"
             fullWidth={isMobile}
           >
